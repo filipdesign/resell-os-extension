@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{width:260px;background:#0f0f14;color:#e5e7eb;font-family:-apple-system,sans-serif;font-size:12px;}
+.hdr{background:linear-gradient(135deg,#8b5cf6,#10b981);padding:10px 12px;display:flex;align-items:center;gap:8px;}
+.t1{font-weight:700;font-size:13px;color:white}
+.t2{font-size:9.5px;color:rgba(255,255,255,0.7)}
+.body{padding:10px 12px;display:flex;flex-direction:column;gap:6px;}
+.stat{display:flex;align-items:center;gap:6px;padding:6px 8px;background:#1a1a24;border-radius:8px;margin-bottom:2px;}
+.dot{width:7px;height:7px;border-radius:50%;background:#ef4444;flex-shrink:0}
+.dot.on{background:#10b981}
+.section{font-size:10px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin:4px 0 2px;}
+.btn{width:100%;padding:7px 11px;border:none;border-radius:8px;cursor:pointer;font-size:11.5px;font-weight:600;color:white;text-align:left;transition:opacity .15s;font-family:inherit}
+.btn:hover{opacity:.83}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.bp{background:#8b5cf6}
+.bo{background:#f59e0b}
+.bg{background:#10b981}
+.bd{background:#1f2937;border:1px solid #374151}
+.trow{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #1f2937;font-size:11px;color:#9ca3af}
+.trow:last-child{border:none}
+.tog{width:34px;height:18px;background:#374151;border-radius:999px;border:none;cursor:pointer;position:relative;transition:background .2s;flex-shrink:0}
+.tog.on{background:#8b5cf6}
+.tog::after{content:'';position:absolute;width:13px;height:13px;background:white;border-radius:50%;top:2.5px;left:2.5px;transition:left .2s}
+.tog.on::after{left:18.5px}
+.discount-row{display:flex;align-items:center;gap:6px;padding:5px 0;}
+.discount-label{font-size:11px;color:#9ca3af;flex:1}
+.discount-val{font-size:13px;font-weight:700;color:#f59e0b;min-width:30px;text-align:center}
+input[type=range]{flex:1;accent-color:#8b5cf6;height:4px;}
+.footer{padding:7px 12px;border-top:1px solid #1f2937;font-size:9px;color:#374151;text-align:center}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <span style="font-size:1.3rem">📦</span>
+  <div><div class="t1">ResellOS</div><div class="t2">Vinted Extension v1.1</div></div>
+</div>
+<div class="body">
+  <div class="stat">
+    <div class="dot" id="vdot"></div>
+    <span id="vstatus">Sprawdzam...</span>
+  </div>
+
+  <div class="section">Akcje</div>
+  <button class="btn bp" id="b-repost">☑️ Odśwież zaznaczone</button>
+  <button class="btn bo" id="b-offers">💌 Wyślij oferty</button>
+  <button class="btn bg" id="b-sync">🔁 Sync sprzedaży</button>
+  <button class="btn bd" id="b-app">🚀 Otwórz ResellOS</button>
+
+  <div class="section">% Zniżki w ofertach</div>
+  <div class="discount-row">
+    <span class="discount-label">Zaproponuj zniżkę:</span>
+    <span class="discount-val" id="disc-val">10%</span>
+  </div>
+  <input type="range" id="disc-range" min="5" max="50" step="5" value="10">
+  <div style="display:flex;justify-content:space-between;font-size:9px;color:#4b5563;padding:0 2px;">
+    <span>5%</span><span>25%</span><span>50%</span>
+  </div>
+
+  <div class="section">Automatyzacja AI</div>
+  <div class="trow">
+    <span>🔄 Auto-odświeżanie (60 min)</span>
+    <button class="tog" id="t-repost"></button>
+  </div>
+  <div class="trow">
+    <span>💌 Auto-oferty do lajkujących</span>
+    <button class="tog" id="t-offers"></button>
+  </div>
+  <div class="trow">
+    <span>📦 Auto-import ogłoszeń</span>
+    <button class="tog" id="t-import"></button>
+  </div>
+  <div class="trow">
+    <span>🔁 Auto-sync sprzedaży</span>
+    <button class="tog" id="t-sync"></button>
+  </div>
+</div>
+<div class="footer">Nie powiązane z Vinted UAB</div>
+<script src="src/popup.js"></script>
+</body>
+</html>

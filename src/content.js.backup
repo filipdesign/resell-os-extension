@@ -1,0 +1,379 @@
+;(function() {
+'use strict'
+const APP_URL = 'https://secondhand-manager-xax8.vercel.app'
+const PURPLE = '#8b5cf6', GREEN = '#10b981', ORANGE = '#f59e0b', RED = '#ef4444'
+const rnd = (min, max) => min + Math.random() * (max - min)
+const sleep = (ms) => new Promise(r => setTimeout(r, ms))
+function getCookie(name) {
+  try { for (const p of document.cookie.split(';').map(s=>s.trim()).reverse()) { const eq = p.indexOf('='); if (eq>0 && decodeURIComponent(p.slice(0,eq).trim())===name) return decodeURIComponent(p.slice(eq+1)) } } catch {} return null
+}
+function uuidv4() { return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,c=>(c^crypto.getRandomValues(new Uint8Array(1))[0]&15>>c/4).toString(16)) }
+
+async function fetchImageViaBackground(url) {
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage({ type: 'vinted:fetchArrayBuffer', url }, resp => {
+      if (!resp || !resp.ok) { reject(new Error('bg fetch fail: ' + (resp?.status || resp?.error || '?'))); return }
+      const blob = new Blob([resp.buffer], { type: resp.contentType || 'image/jpeg' })
+      resolve(blob)
+    })
+  })
+}
+
+async function repostSingle(itemId) {
+  try {
+    toast('📋 Pobieram dane...', PURPLE)
+    const anonId = getCookie('anon_id'), csrf = uuidv4()
+    const h = { 'accept': 'application/json', 'x-csrf-token': csrf }
+    if (anonId) h['x-anon-id'] = anonId
+    let data = null
+    try {
+      const r = await fetch(`${location.origin}/api/v2/item_upload/items/${itemId}`, { credentials: 'include', headers: h })
+      if (r.ok) { const j = await r.json(); data = j.item || j }
+    } catch {}
+
+    const brandLink = document.querySelector('a[href*="/brand/"],a[href*="/marki/"]')
+    const brandText = brandLink?.textContent?.trim().split(' ')[0] || ''
+    const bodyText = document.body.innerText
+    const sizeM = bodyText.match(/Rozmiar[:\s]+([\w.]+)/)
+    const condM = bodyText.match(/Stan[:\s]+([^|\n]+)/)
+    const colorM = bodyText.match(/Kolor[:\s]+([^/|\n]+)/)
+    const titleEl = document.querySelector('h1')
+
+    if (!data && !titleEl) throw new Error('Nie mozna pobrac danych')
+
+    const repostData = {
+      title: data?.title || titleEl?.textContent?.trim() || '',
+      description: data?.description || '',
+      price: data?.price_numeric || parseFloat(data?.price?.amount || '0') || 0,
+      brand: brandText || data?.brand_title || '',
+      size: sizeM?.[1]?.trim() || data?.size_title || '',
+      condition: condM?.[1]?.trim() || '',
+      color: colorM?.[1]?.trim() || '',
+      catalog_id: data?.catalog_id || null,
+      catalog_title: data?.catalog_title || '',
+      photos: (data?.photos || []).map(p => p.full_size_url || p.url).filter(Boolean),
+      source_id: itemId
+    }
+
+    const shouldDelete = confirm(`Repost: "${repostData.title}"\n\nUsunac stare ogloszenie?\n(OK = usun, Anuluj = zachowaj)`)
+    sessionStorage.setItem('ros_repost_data', JSON.stringify(repostData))
+
+    if (shouldDelete) {
+      toast('🗑️ Usuwam...', ORANGE)
+      try {
+        const delBtn = [...document.querySelectorAll('button,a')].find(e => e.textContent.trim() === 'Usuń')
+        if (delBtn) {
+          delBtn.click()
+          await sleep(1000)
+          const confirmBtn = [...document.querySelectorAll('button')].find(e => e.textContent.trim() === 'Potwierdź i usuń')
+          if (confirmBtn) {
+            const origPush = history.pushState.bind(history)
+            history.pushState = function(...args) {
+              if (args[2] && args[2].includes('/404')) {
+                history.pushState = origPush
+                window.location.href = location.origin + '/items/new'
+                return
+              }
+              return origPush(...args)
+            }
+            confirmBtn.click()
+            setTimeout(() => { window.location.href = location.origin + '/items/new' }, 300)
+            return
+          } else { toast('Brak dialogu potwierdzenia', ORANGE) }
+        } else { toast('Brak przycisku Usun', ORANGE) }
+      } catch(e) { toast('Blad usuwania: ' + e.message, ORANGE) }
+    }
+
+    toast('📝 Otwieram formularz...', PURPLE)
+    await sleep(400)
+    window.location.href = `${location.origin}/items/new`
+  } catch(e) {
+    toast('❌ ' + e.message, RED)
+    console.error('[ROS]', e)
+  }
+}
+
+// ---- AUTOFILL na /items/new ----
+if (location.pathname === '/items/new') {
+  const raw = sessionStorage.getItem('ros_repost_data')
+  if (raw) {
+    setTimeout(async () => {
+      try {
+        const d = JSON.parse(raw)
+        sessionStorage.removeItem('ros_repost_data')
+
+        const fill = (sel, val) => {
+          const el = document.querySelector(sel)
+          if (!el || val === undefined || val === null || val === '') return false
+          el.focus()
+          const proto = el.tagName === 'TEXTAREA' ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype
+          const ns = Object.getOwnPropertyDescriptor(proto, 'value')
+          ns?.set?.call(el, val)
+          el.dispatchEvent(new Event('input', { bubbles: true }))
+          el.dispatchEvent(new Event('change', { bubbles: true }))
+          return true
+        }
+
+        await sleep(2500)
+
+        fill('input[name="title"],input[placeholder*="sprzedajesz"],input[placeholder*="tytu"]', d.title)
+        await sleep(300)
+        fill('textarea[name="description"],textarea[placeholder*="opis"],textarea[placeholder*="wi"]', d.description)
+        await sleep(300)
+        fill('input[name="price"],input[type="number"][placeholder*="cen"],input[placeholder*="PLN"]', String(d.price).replace('.', ','))
+
+        // Zdjecia przez background (omija CORS)
+        if (d.photos && d.photos.length) {
+          setTimeout(async () => {
+            try {
+              const fileInput = document.querySelector('input[type="file"]')
+              if (!fileInput) { toast('Brak pola na zdjecia', ORANGE); return }
+              const dt = new DataTransfer()
+              for (let i = 0; i < Math.min(d.photos.length, 8); i++) {
+                try {
+                  const blob = await fetchImageViaBackground(d.photos[i])
+                  dt.items.add(new File([blob], `photo_${i+1}.jpg`, { type: 'image/jpeg' }))
+                  toast(`Zdjecie ${i+1}/${d.photos.length}`, GREEN)
+                } catch(e2) {
+                  // fallback: bezposredni fetch
+                  try {
+                    const r = await fetch(d.photos[i], { mode: 'cors', credentials: 'omit' })
+                    if (r.ok) {
+                      const blob = await r.blob()
+                      dt.items.add(new File([blob], `photo_${i+1}.jpg`, { type: 'image/jpeg' }))
+                      toast(`Zdjecie ${i+1}/${d.photos.length}`, GREEN)
+                    }
+                  } catch(e3) { console.warn('[ROS] skip photo', i, e3) }
+                }
+              }
+              if (dt.files.length > 0) {
+                fileInput.files = dt.files
+                fileInput.dispatchEvent(new Event('change', { bubbles: true }))
+                toast(`✅ Wgrano ${dt.files.length} zdjec!`, GREEN)
+              } else {
+                toast('⚠️ Nie udalo sie wgrac zdjec - dodaj recznie', ORANGE)
+              }
+            } catch(e) { toast('Blad zdjec: ' + e.message, ORANGE) }
+          }, 1500)
+        }
+
+        // Kategoria
+        setTimeout(async () => {
+          try {
+            const catInput = document.querySelector('[data-testid="catalog-select-dropdown-input"]')
+            if (catInput) {
+              catInput.click()
+              await sleep(2500)
+              const first = document.querySelector('[class*="Cell__heading"],[class*="cell__heading"]')
+              if (first) { first.closest('[class*="Cell"],[class*="cell"]')?.click(); toast('✅ Kategoria', GREEN) }
+            }
+          } catch(e) {}
+        }, 6000)
+
+        // Marka
+        if (d.brand) {
+          setTimeout(async () => {
+            try {
+              const inp = document.querySelector('[data-testid="brand-select-dropdown-input"]')
+              if (!inp) return
+              inp.click()
+              await sleep(500)
+              // Wpisz nazwe marki zeby pokazaly sie wyniki
+              inp.focus()
+              const proto = window.HTMLInputElement.prototype
+              const ns = Object.getOwnPropertyDescriptor(proto, 'value')
+              ns?.set?.call(inp, d.brand)
+              inp.dispatchEvent(new Event('input', { bubbles: true }))
+              inp.dispatchEvent(new Event('change', { bubbles: true }))
+              await sleep(2000)
+              const cell = [...document.querySelectorAll('[class*="Cell__heading"]')].find(e => e.textContent.trim().toLowerCase() === d.brand.toLowerCase())
+              if (cell) { cell.closest('[class*="Cell"]')?.click(); toast('✅ Marka: ' + d.brand, GREEN) }
+              else { toast('⚠️ Nie znaleziono marki: ' + d.brand, ORANGE) }
+            } catch(e) {}
+          }, 9000)
+        }
+
+        // Rozmiar
+        if (d.size) {
+          setTimeout(async () => {
+            try {
+              const inp = document.querySelector('[data-testid="size-select-dropdown-input"],[data-testid*="size"]')
+              if (!inp) return
+              inp.click()
+              await sleep(2000)
+              const cell = [...document.querySelectorAll('[class*="Cell__heading"]')].find(e => e.textContent.trim() === d.size)
+              if (cell) { cell.closest('[class*="Cell"]')?.click(); toast('✅ Rozmiar', GREEN) }
+            } catch(e) {}
+          }, 12000)
+        }
+
+        // Stan
+        if (d.condition) {
+          setTimeout(async () => {
+            try {
+              const inp = document.querySelector('[data-testid="category-condition-single-list-input"]')
+              if (!inp) return
+              inp.click()
+              await sleep(2000)
+              const cell = [...document.querySelectorAll('[class*="Cell__heading"]')].find(e => e.textContent.trim().includes(d.condition.trim().slice(0,10)))
+              if (cell) { cell.closest('[class*="Cell"]')?.click(); toast('✅ Stan', GREEN) }
+            } catch(e) {}
+          }, 15000)
+        }
+
+        // Kolor
+        if (d.color) {
+          setTimeout(async () => {
+            try {
+              const inp = document.querySelector('[data-testid="color-select-dropdown-input"]')
+              if (!inp) return
+              inp.click()
+              await sleep(2000)
+              const cell = [...document.querySelectorAll('[class*="Cell__heading"]')].find(e => e.textContent.trim().toLowerCase().includes(d.color.trim().toLowerCase().slice(0,5)))
+              if (cell) { cell.closest('[class*="Cell"]')?.click(); toast('✅ Kolor', GREEN) }
+            } catch(e) {}
+          }, 18000)
+        }
+
+        // Panel pomocniczy
+        const helper = document.createElement('div')
+        helper.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:2147483647;background:#1a1a2e;color:white;padding:16px;border-radius:12px;max-width:340px;font-family:-apple-system,sans-serif;font-size:12px;box-shadow:0 8px 32px rgba(0,0,0,.5);border:1px solid #8b5cf6'
+        helper.innerHTML = '<div style="font-weight:700;color:#8b5cf6;margin-bottom:10px;font-size:14px">📋 ResellOS — Dane ogłoszenia</div>'
+          + (d.catalog_title ? `<div style="margin:4px 0;color:#fbbf24">📂 Kategoria: <b>${d.catalog_title}</b></div>` : '')
+          + (d.brand ? `<div style="margin:4px 0">🏷️ Marka: <b>${d.brand}</b></div>` : '')
+          + (d.size ? `<div style="margin:4px 0">📏 Rozmiar: <b>${d.size}</b></div>` : '')
+          + (d.condition ? `<div style="margin:4px 0">⭐ Stan: <b>${d.condition}</b></div>` : '')
+          + (d.price ? `<div style="margin:4px 0">💰 Cena: <b>${d.price} PLN</b></div>` : '')
+          + (d.photos?.length ? `<div style="margin:8px 0 4px;font-weight:600;color:#10b981">🖼️ Zdjęcia (${d.photos.length}):</div><div style="display:flex;flex-wrap:wrap;gap:4px">${d.photos.slice(0,9).map(url=>`<a href="${url}" target="_blank"><img src="${url}" style="width:48px;height:48px;object-fit:cover;border-radius:5px;border:2px solid #8b5cf6"></a>`).join('')}</div>` : '')
+          + '<button onclick="this.parentElement.remove()" style="margin-top:10px;background:#8b5cf6;border:none;color:white;padding:5px 14px;border-radius:6px;cursor:pointer;font-size:12px;width:100%">✕ Zamknij</button>'
+        document.body.appendChild(helper)
+        toast('✅ Formularz wypelniony!', GREEN)
+      } catch(e) { console.error('[ROS] autofill:', e) }
+    }, 2000)
+  }
+}
+
+let lastUrl = ''
+
+function injectItemPage() {
+  if (document.getElementById('ros-item-btn')) return
+  const titleEl = document.querySelector('h1')
+  if (!titleEl) return
+  const itemId = location.pathname.match(/\/items\/(\d+)/)?.[1]
+  if (!itemId) return
+  const wrap = document.createElement('div')
+  wrap.style.cssText = 'display:flex;gap:8px;margin:8px 0;'
+  const btn = document.createElement('button')
+  btn.id = 'ros-item-btn'
+  btn.textContent = '🔄 Odśwież ogłoszenie'
+  btn.style.cssText = 'padding:10px 20px;background:#8b5cf6;color:white;border:none;border-radius:10px;cursor:pointer;font-size:14px;font-weight:700;box-shadow:0 4px 12px rgba(139,92,246,0.4);'
+  btn.onclick = () => repostSingle(itemId)
+  wrap.appendChild(btn)
+  titleEl.parentNode.insertBefore(wrap, titleEl.nextSibling)
+}
+
+function injectCheckboxes() {
+  document.querySelectorAll('[data-testid^="product-item-id-"][class*="new-item-box__container"]').forEach(card => {
+    if (card.querySelector('.ros-cb-wrap')) return
+    const id = card.dataset.testid?.match(/product-item-id-(\d+)/)?.[1]; if (!id) return
+    const wrap = document.createElement('div'); wrap.className = 'ros-cb-wrap'
+    wrap.style.cssText = 'position:absolute;top:6px;left:6px;z-index:999;background:rgba(0,0,0,0.5);border-radius:6px;padding:3px;'
+    const cb = document.createElement('input'); cb.type = 'checkbox'; cb.className = 'ros-item-cb'
+    cb.dataset.id = id
+    cb.style.cssText = 'width:18px;height:18px;cursor:pointer;accent-color:#8b5cf6;'
+    cb.onclick = e => e.stopPropagation()
+    wrap.appendChild(cb)
+    card.style.position = 'relative'
+    card.appendChild(wrap)
+  })
+}
+
+function injectWardrobePanel() {
+  if (document.getElementById('ros-panel')) return
+  const panel = document.createElement('div')
+  panel.id = 'ros-panel'
+  panel.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:2147483647;background:#1e1b4b;border-radius:16px;padding:12px;box-shadow:0 8px 32px rgba(0,0,0,0.4);width:180px;'
+  const hdr = document.createElement('div')
+  hdr.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;'
+  const ttl = document.createElement('span')
+  ttl.style.cssText = 'color:white;font-weight:700;font-size:14px;'
+  ttl.textContent = 'ResellOS'
+  const cls = document.createElement('button')
+  cls.style.cssText = 'background:none;border:none;color:#9ca3af;cursor:pointer;font-size:16px;'
+  cls.textContent = '×'
+  hdr.appendChild(ttl); hdr.appendChild(cls)
+  const msg = document.createElement('div')
+  msg.id = 'ros-msg'
+  msg.style.cssText = 'color:#9ca3af;font-size:11px;margin-bottom:8px;min-height:14px;'
+  panel.appendChild(hdr); panel.appendChild(msg)
+  const b1 = mkBtn('Odswierz zaznaczone', '#8b5cf6', () => {})
+  const b2 = mkBtn('Zaznacz wszystkie', '#7c3aed', () => {})
+  const b3 = mkBtn('Sync statusow', '#10b981', () => {})
+  const b4 = mkBtn('Otworz ResellOS', '#374151', () => {})
+  panel.appendChild(b1); panel.appendChild(b2); panel.appendChild(b3); panel.appendChild(b4)
+  document.body.appendChild(panel)
+  cls.onclick = () => panel.style.display = 'none'
+  b2.onclick = () => {
+    injectCheckboxes()
+    const all = document.querySelectorAll('.ros-item-cb')
+    const any = [...all].some(c => !c.checked)
+    all.forEach(c => c.checked = any)
+  }
+  b1.onclick = () => {
+    injectCheckboxes()
+    const checked = [...document.querySelectorAll('.ros-item-cb:checked')]
+    if (!checked.length) { toast('Zaznacz ogloszenia', ORANGE); return }
+    const ids = checked.map(cb => cb.dataset.id).filter(Boolean)
+    toast('Otwieranie ' + ids.length + ' zakladek...', PURPLE)
+    ids.forEach((id, i) => setTimeout(() => window.open(location.origin + '/items/' + id, '_blank'), i * 600))
+  }
+  b3.onclick = syncStatuses
+  b4.onclick = () => window.open(APP_URL, '_blank')
+  setTimeout(injectCheckboxes, 2000)
+}
+
+async function syncStatuses() {
+  const msg = document.getElementById('ros-msg')
+  if (msg) msg.textContent = 'Pobieram...'
+  try {
+    const r = await fetch('/api/v2/items?status[]=sold&per_page=50', { credentials: 'include', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+    if (r.ok) {
+      const d = await r.json()
+      const sold = (d.items || []).map(i => ({ vinted_id: String(i.id), title: i.title, price: i.price?.amount, sold_at: i.updated_at, status: 'sold' }))
+      chrome.runtime.sendMessage({ type: 'SYNC_SOLD', items: sold }, () => {
+        if (msg) { msg.textContent = sold.length + ' sprzedanych'; setTimeout(() => msg.textContent = '', 5000) }
+      })
+    }
+  } catch(e) { if (msg) msg.textContent = 'Blad' }
+}
+
+function mkBtn(text, color, onClick) {
+  const b = document.createElement('button')
+  b.textContent = text
+  b.style.cssText = 'padding:5px 8px;background:' + color + ';color:white;border:none;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;font-family:-apple-system,sans-serif;margin-top:3px;width:100%;'
+  b.onclick = () => onClick(b)
+  return b
+}
+
+function toast(text, color) {
+  if (!color) color = '#8b5cf6'
+  const t = document.createElement('div')
+  t.style.cssText = 'position:fixed;top:20px;right:20px;z-index:2147483647;background:' + color + ';color:white;padding:13px 18px;border-radius:12px;font-family:-apple-system,sans-serif;font-weight:600;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.25);'
+  t.textContent = text
+  document.body.appendChild(t)
+  setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity .4s' }, 3500)
+  setTimeout(() => t.remove(), 4000)
+}
+
+function init() {
+  if (location.href === lastUrl) return
+  lastUrl = location.href
+  const path = location.pathname
+  if (path.match(/\/items\/\d+/) && !path.includes('/edit')) setTimeout(injectItemPage, rnd(1200, 2500))
+  if (path.match(/\/my\/items|\/closet|\/wardrobe|\/member\//)) setTimeout(injectWardrobePanel, rnd(1500, 3000))
+}
+
+init()
+const obs = new MutationObserver(() => init())
+obs.observe(document.body, { childList: true, subtree: true })
+})()

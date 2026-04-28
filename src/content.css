@@ -1,0 +1,79 @@
+#ros-panel {
+  position: fixed !important;
+  bottom: 20px !important;
+  right: 20px !important;
+  z-index: 2147483646 !important;
+  background: #0d0d1a !important;
+  border: 1px solid #8b5cf6 !important;
+  border-radius: 14px !important;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif !important;
+  box-shadow: 0 8px 32px rgba(139,92,246,.3) !important;
+  min-width: 220px !important;
+  overflow: hidden !important;
+}
+#ros-hdr {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  padding: 10px 13px !important;
+  background: linear-gradient(135deg, rgba(139,92,246,.25), rgba(16,185,129,.1)) !important;
+  border-bottom: 1px solid rgba(139,92,246,.3) !important;
+}
+#ros-min {
+  background: none !important;
+  border: none !important;
+  color: #6b7280 !important;
+  cursor: pointer !important;
+  font-size: 15px !important;
+  padding: 0 4px !important;
+}
+#ros-content {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+  padding: 11px !important;
+}
+.ros-btn {
+  width: 100% !important;
+  padding: 8px 11px !important;
+  border: none !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  font-size: 11.5px !important;
+  font-weight: 600 !important;
+  color: white !important;
+  text-align: left !important;
+  transition: opacity .15s !important;
+  font-family: -apple-system, sans-serif !important;
+}
+.ros-btn:hover { opacity: .82 !important; }
+.ros-btn:disabled { opacity: .45 !important; cursor: not-allowed !important; }
+.ros-purple { background: #8b5cf6 !important; }
+.ros-orange { background: #f59e0b !important; }
+.ros-green  { background: #10b981 !important; }
+.ros-dark   { background: #1f2937 !important; border: 1px solid #374151 !important; }
+#ros-msg {
+  font-size: 10.5px !important;
+  color: #9ca3af !important;
+  min-height: 13px !important;
+  text-align: center !important;
+}
+.ros-bar-wrap {
+  background: #1f2937 !important;
+  border-radius: 999px !important;
+  height: 4px !important;
+  overflow: hidden !important;
+  margin-bottom: 3px !important;
+}
+#ros-bar {
+  height: 100% !important;
+  background: linear-gradient(90deg, #8b5cf6, #10b981) !important;
+  border-radius: 999px !important;
+  width: 0% !important;
+  transition: width .3s ease !important;
+}
+#ros-lbl {
+  font-size: 10px !important;
+  color: #6b7280 !important;
+  text-align: center !important;
+}
