@@ -447,8 +447,11 @@ async function syncVintedOrders() {
     // Mapuj statusy Vinted -> Supabase
     const mapStatus = (text) => {
       const t = text.toLowerCase()
-      if (t.includes('zakończone pomyślnie') || t.includes('przyjęła przedmiot') || t.includes('doręczone') || t.includes('sprzedaż zakończona')) return { status: 'zwrocony', is_sold: true }
-      if (t.includes('w toku') || t.includes('oczekuje') || t.includes('zarezerwowany') || t.includes('opłacone')) return { status: 'zarezerwowany', is_sold: false }
+      if (t.includes('zakończone pomyślnie') || t.includes('przyjęła przedmiot') || t.includes('sprzedaż zakończona')) return { status: 'sold', is_sold: true }
+      if (t.includes('doręczone') || t.includes('dostarczono')) return { status: 'sold', is_sold: true }
+      if (t.includes('zwrot') || t.includes('zwrócono')) return { status: 'zwrocony', is_sold: false }
+      if (t.includes('w toku') || t.includes('oczekuje') || t.includes('opłacone')) return { status: 'zarezerwowany', is_sold: false }
+      if (t.includes('zarezerwowany')) return { status: 'zarezerwowany', is_sold: false }
       if (t.includes('wysłane') || t.includes('w drodze') || t.includes('doręczenie')) return { status: 'w-drodze', is_sold: false }
       if (t.includes('anulowane') || t.includes('anulowano')) return { status: 'vinted', is_sold: false }
       return null
