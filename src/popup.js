@@ -29,6 +29,22 @@ async function init() {
 
   // Przełączniki
   tog('t-repost', s.auto_repost, 'auto_repost')
+  const intervalRow = document.getElementById('repost-interval-row')
+  if (intervalRow) intervalRow.style.display = s.auto_repost ? 'flex' : 'none'
+  const sel = document.getElementById('repost-days')
+  if (sel && s.repost_days) sel.value = s.repost_days
+
+  document.getElementById('t-repost')?.addEventListener('change', e => {
+    const on = e.target.checked
+    chrome.storage.local.set({ auto_repost: on })
+    if (intervalRow) intervalRow.style.display = on ? 'flex' : 'none'
+    chrome.runtime.sendMessage({ type: on ? 'ALARM_START' : 'ALARM_STOP' })
+  })
+  sel?.addEventListener('change', e => {
+    const days = parseInt(e.target.value)
+    chrome.storage.local.set({ repost_days: days })
+    chrome.runtime.sendMessage({ type: 'ALARM_START', days })
+  })
   tog('t-offers', s.auto_offers, 'auto_offers')
   tog('t-import', s.auto_import, 'auto_import')
   tog('t-sync',   s.auto_sync,   'auto_sync')

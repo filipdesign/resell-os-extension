@@ -65,6 +65,17 @@ input[type=range]{flex:1;accent-color:#8b5cf6;height:4px;}
     <span>🔄 Auto-odświeżanie (60 min)</span>
     <button class="tog" id="t-repost"></button>
   </div>
+  <div class="row" id="repost-interval-row" style="display:none">
+    <span style="font-size:11px;color:#aaa">Co ile dni odświeżać:</span>
+    <select id="repost-days" style="background:#2a2a2a;color:#fff;border:1px solid #444;border-radius:6px;padding:2px 6px;font-size:11px">
+      <option value="3">co 3 dni</option>
+      <option value="5">co 5 dni</option>
+      <option value="7" selected>co 7 dni</option>
+      <option value="14">co 14 dni</option>
+    </select
+  </div>
+  <div class="row" style="display:none" id="repost-placeholder">
+  </div>
   <div class="trow">
     <span>💌 Auto-oferty do lajkujących</span>
     <button class="tog" id="t-offers"></button>

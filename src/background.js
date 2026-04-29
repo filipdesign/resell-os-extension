@@ -153,3 +153,30 @@ async function syncSold(items, cb) {
     cb && cb({ ok: true })
   } catch { cb && cb({ ok: false }) }
 }
+
+
+// ---- AUTO-REPOST HARMONOGRAM ----
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg.type === 'ALARM_START') {
+    chrome.storage.local.get(['repost_days'], s => {
+      const days = msg.days || s.repost_days || 7
+      const periodInMinutes = days * 24 * 60
+      chrome.alarms.create('auto_repost', { delayInMinutes: periodInMinutes, periodInMinutes })
+      console.log('[ResellOS] Alarm ustawiony co', days, 'dni')
+    })
+  } else if (msg.type === 'ALARM_STOP') {
+    chrome.alarms.clear('auto_repost')
+    console.log('[ResellOS] Alarm wylaczony')
+  }
+})
+
+chrome.alarms.onAlarm.addListener(async alarm => {
+  if (alarm.name !== 'auto_repost') return
+  console.log('[ResellOS] Alarm auto_repost - uruchamiam repost')
+  const tabs = await chrome.tabs.query({ url: '*://*.vinted.pl/*' })
+  if (tabs.length === 0) {
+    console.log('[ResellOS] Brak otwartej zakladki Vinted - pomijam')
+    return
+  }
+  chrome.tabs.sendMessage(tabs[0].id, { type: 'REPOST_ALL' })
+})
