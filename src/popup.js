@@ -51,7 +51,17 @@ async function init() {
   }
   tog('t-offers', s.auto_offers, 'auto_offers')
   tog('t-import', s.auto_import, 'auto_import')
-  tog('t-sync',   s.auto_sync,   'auto_sync')
+  // Auto-sync toggle z alarmem co 60 min
+  const elSync = document.getElementById('t-sync')
+  if (elSync) {
+    if (s.auto_sync) elSync.classList.add('on')
+    elSync.onclick = async () => {
+      elSync.classList.toggle('on')
+      const on = elSync.classList.contains('on')
+      await chrome.storage.local.set({ auto_sync: on })
+      chrome.runtime.sendMessage({ type: on ? 'SYNC_ALARM_START' : 'SYNC_ALARM_STOP' })
+    }
+  }
 }
 
 function tog(id, val, key) {

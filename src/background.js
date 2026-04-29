@@ -180,3 +180,21 @@ chrome.alarms.onAlarm.addListener(async alarm => {
   }
   chrome.tabs.sendMessage(tabs[0].id, { type: 'REPOST_ALL' })
 })
+
+
+// ---- AUTO-SYNC HARMONOGRAM (co 60 min) ----
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg.type === 'SYNC_ALARM_START') {
+    chrome.alarms.create('auto_sync', { periodInMinutes: 60 })
+    console.log('[ResellOS] Auto-sync alarm ustawiony co 60 min')
+  } else if (msg.type === 'SYNC_ALARM_STOP') {
+    chrome.alarms.clear('auto_sync')
+    console.log('[ResellOS] Auto-sync alarm wylaczony')
+  }
+})
+
+chrome.alarms.onAlarm.addListener(async alarm => {
+  if (alarm.name !== 'auto_sync') return
+  console.log('[ResellOS] Auto-sync - uruchamiam sync zamowien')
+  chrome.runtime.sendMessage({ type: 'OPEN_SYNC_TAB' })
+})
