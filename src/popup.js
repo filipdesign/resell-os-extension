@@ -28,7 +28,27 @@ async function init() {
   }
 
   // Przełączniki
-  tog('t-repost', s.auto_repost, 'auto_repost')
+  // Auto-repost toggle z selectorem dni
+  const elRepost = document.getElementById('t-repost')
+  const intervalRow = document.getElementById('repost-interval-row')
+  const selDays = document.getElementById('repost-days')
+  if (elRepost) {
+    if (s.auto_repost) elRepost.classList.add('on')
+    if (intervalRow) intervalRow.style.display = s.auto_repost ? 'flex' : 'none'
+    if (selDays && s.repost_days) selDays.value = s.repost_days
+    elRepost.onclick = async () => {
+      elRepost.classList.toggle('on')
+      const on = elRepost.classList.contains('on')
+      await chrome.storage.local.set({ auto_repost: on })
+      if (intervalRow) intervalRow.style.display = on ? 'flex' : 'none'
+      chrome.runtime.sendMessage({ type: on ? 'ALARM_START' : 'ALARM_STOP' })
+    }
+    selDays?.addEventListener('change', async e => {
+      const days = parseInt(e.target.value)
+      await chrome.storage.local.set({ repost_days: days })
+      chrome.runtime.sendMessage({ type: 'ALARM_START', days })
+    })
+  }
   const intervalRow = document.getElementById('repost-interval-row')
   if (intervalRow) intervalRow.style.display = s.auto_repost ? 'flex' : 'none'
   const sel = document.getElementById('repost-days')
