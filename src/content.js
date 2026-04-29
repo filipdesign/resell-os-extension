@@ -312,17 +312,12 @@ function injectItemPage() {
     // Zbierz dane ogloszenia z DOM
     const title = document.querySelector('h1,[class*="title"]')?.textContent?.trim() || ''
     const price = document.querySelector('[class*="price-tag"],[class*="ItemPrice"]')?.textContent?.replace(/[^0-9,\.]/g,'').replace(',','.') || ''
-    // Marka - znajdz div.details-list__item-value z tekstem "Marka" i weź nextElementSibling
+    // Marka - znajdz link w rzedzie Marka
     let brand = ''
-    const markaDiv = [...document.querySelectorAll('[class*="details-list__item-value"],[class*="details-list__item-title"]')]
-      .find(e => e.textContent.trim() === 'Marka')
-    if (markaDiv) {
-      const itemEl = markaDiv.closest('[class*="details-list__item"]')
-      if (itemEl) {
-        const valueEl = itemEl.querySelector('[class*="details-list__item-value"]:last-child,[class*="value"]:last-child')
-        brand = valueEl?.textContent?.trim() || ''
-      }
-      if (!brand) brand = markaDiv.nextElementSibling?.textContent?.trim() || markaDiv.parentElement?.nextElementSibling?.textContent?.trim() || ''
+    const markaRow = [...document.querySelectorAll('.details-list__item')]
+      .find(row => row.querySelector('.details-list__item-value')?.textContent?.trim() === 'Marka')
+    if (markaRow) {
+      brand = markaRow.querySelector('a')?.textContent?.trim() || ''
     }
     const size = [...document.querySelectorAll('[class*="details"] [class*="value"],[class*="ItemAttribute"]')]
       .find(e => e.previousElementSibling?.textContent?.includes('Rozmiar'))?.textContent?.trim() || ''
