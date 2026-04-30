@@ -646,23 +646,25 @@ function tryAutofillDraft() {
     // Wyczysc URL parametry zeby nie wchodzily ponownie
     window.history.replaceState({}, '', location.pathname)
 
-    // Helper - wypelnianie pol React
+    // Helper - wypelnianie pol React (input i textarea)
     function fillInput(el, value) {
       if (!el) return false
       el.focus()
-      el.click()
-      // React synthetic event trick
-      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value') ||
-        Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')
-      if (nativeInputValueSetter) {
-        nativeInputValueSetter.set.call(el, value)
-      } else {
+      try {
+        const proto = el.tagName === 'TEXTAREA'
+          ? window.HTMLTextAreaElement.prototype
+          : window.HTMLInputElement.prototype
+        const setter = Object.getOwnPropertyDescriptor(proto, 'value')
+        if (setter && setter.set) {
+          setter.set.call(el, value)
+        } else {
+          el.value = value
+        }
+      } catch(e) {
         el.value = value
       }
       el.dispatchEvent(new Event('input', { bubbles: true }))
       el.dispatchEvent(new Event('change', { bubbles: true }))
-      el.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true }))
-      el.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }))
       return true
     }
 
