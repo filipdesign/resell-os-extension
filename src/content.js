@@ -646,34 +646,43 @@ function tryAutofillDraft() {
     // Wyczysc URL parametry zeby nie wchodzily ponownie
     window.history.replaceState({}, '', location.pathname)
 
-    // Tytul
-    const titleInput = document.querySelector('input[name="title"], input[placeholder*="tytul"], input[placeholder*="Tytuł"], input[placeholder*="title"]')
-    if (titleInput && draft.title) {
-      titleInput.focus()
-      titleInput.value = draft.title
-      titleInput.dispatchEvent(new Event('input', { bubbles: true }))
-      titleInput.dispatchEvent(new Event('change', { bubbles: true }))
-      filled++
+    // Helper - wypelnianie pol React
+    function fillInput(el, value) {
+      if (!el) return false
+      el.focus()
+      el.click()
+      // React synthetic event trick
+      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value') ||
+        Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')
+      if (nativeInputValueSetter) {
+        nativeInputValueSetter.set.call(el, value)
+      } else {
+        el.value = value
+      }
+      el.dispatchEvent(new Event('input', { bubbles: true }))
+      el.dispatchEvent(new Event('change', { bubbles: true }))
+      el.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true }))
+      el.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }))
+      return true
     }
 
-    // Opis
-    const descInput = document.querySelector('textarea[name="description"], textarea[placeholder*="opis"], textarea[placeholder*="Opis"], textarea[placeholder*="description"]')
+    // Tytul - Vinted placeholder "Powiedz kupujacym, co sprzedajesz"
+    const titleInput = document.querySelector('input[placeholder*="Powiedz"], input[placeholder*="sprzedajesz"], input[placeholder*="tytul"], input[placeholder*="Tytuł"]')
+    if (titleInput && draft.title) {
+      fillInput(titleInput, draft.title) && filled++
+    }
+
+    // Opis - Vinted placeholder "Powiedz kupujacym cos wiecej"
+    const descInput = document.querySelector('textarea[placeholder*="Powiedz"], textarea[placeholder*="wiecej"], textarea[placeholder*="więcej"], textarea[placeholder*="opis"]')
     if (descInput && draft.description) {
-      descInput.focus()
-      descInput.value = draft.description.replace(/\\n/g, '\n')
-      descInput.dispatchEvent(new Event('input', { bubbles: true }))
-      descInput.dispatchEvent(new Event('change', { bubbles: true }))
-      filled++
+      const descVal = typeof draft.description === 'string' ? draft.description.replace(/\\n/g, '\n') : draft.description
+      fillInput(descInput, descVal) && filled++
     }
 
     // Cena
-    const priceInput = document.querySelector('input[name="price"], input[placeholder*="cena"], input[placeholder*="Cena"], input[placeholder*="price"]')
+    const priceInput = document.querySelector('input[placeholder*="0,00"], input[placeholder*="cena"], input[placeholder*="Cena"]')
     if (priceInput && draft.price) {
-      priceInput.focus()
-      priceInput.value = draft.price
-      priceInput.dispatchEvent(new Event('input', { bubbles: true }))
-      priceInput.dispatchEvent(new Event('change', { bubbles: true }))
-      filled++
+      fillInput(priceInput, String(draft.price)) && filled++
     }
 
     if (filled > 0) {
