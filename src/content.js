@@ -672,10 +672,10 @@ function tryAutofillDraft() {
       fillInput(titleInput, draft.title) && filled++
     }
 
-    // Opis - Vinted placeholder "Powiedz kupujacym cos wiecej"
-    const descInput = document.querySelector('textarea[placeholder*="Powiedz"], textarea[placeholder*="wiecej"], textarea[placeholder*="więcej"], textarea[placeholder*="opis"]')
+    // Opis - probuj rozne selektory
+    const descInput = document.querySelector('textarea')
     if (descInput && draft.description) {
-      const descVal = typeof draft.description === 'string' ? draft.description.replace(/\\n/g, '\n') : draft.description
+      const descVal = typeof draft.description === 'string' ? draft.description.replace(/\\n/g, '\n') : String(draft.description)
       fillInput(descInput, descVal) && filled++
     }
 
