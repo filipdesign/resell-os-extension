@@ -630,3 +630,57 @@ async function sendOffersToLikers() {
     toast('⚠️ Błąd: ' + e.message, ORANGE)
   }
 }
+
+// ---- AUTO-FILL FORMULARZA VINTED Z ros_draft ----
+function tryAutofillDraft() {
+  const raw = localStorage.getItem('ros_draft')
+  if (!raw) return
+  try {
+    const draft = JSON.parse(raw)
+    let filled = 0
+
+    // Tytul
+    const titleInput = document.querySelector('input[name="title"], input[placeholder*="tytul"], input[placeholder*="Tytuł"], input[placeholder*="title"]')
+    if (titleInput && draft.title) {
+      titleInput.focus()
+      titleInput.value = draft.title
+      titleInput.dispatchEvent(new Event('input', { bubbles: true }))
+      titleInput.dispatchEvent(new Event('change', { bubbles: true }))
+      filled++
+    }
+
+    // Opis
+    const descInput = document.querySelector('textarea[name="description"], textarea[placeholder*="opis"], textarea[placeholder*="Opis"], textarea[placeholder*="description"]')
+    if (descInput && draft.description) {
+      descInput.focus()
+      descInput.value = draft.description.replace(/\\n/g, '\n')
+      descInput.dispatchEvent(new Event('input', { bubbles: true }))
+      descInput.dispatchEvent(new Event('change', { bubbles: true }))
+      filled++
+    }
+
+    // Cena
+    const priceInput = document.querySelector('input[name="price"], input[placeholder*="cena"], input[placeholder*="Cena"], input[placeholder*="price"]')
+    if (priceInput && draft.price) {
+      priceInput.focus()
+      priceInput.value = draft.price
+      priceInput.dispatchEvent(new Event('input', { bubbles: true }))
+      priceInput.dispatchEvent(new Event('change', { bubbles: true }))
+      filled++
+    }
+
+    if (filled > 0) {
+      localStorage.removeItem('ros_draft')
+      toast('✅ ResellOS: wypełniono ' + filled + ' pola!', '#10b981')
+    }
+  } catch(e) {
+    console.error('[ROS autofill]', e)
+  }
+}
+
+// Uruchom na /items/new po zaladowaniu strony
+if (location.href.includes('/items/new')) {
+  // Probuj od razu i po 2s (Vinted laduje formularz asynchronicznie)
+  setTimeout(tryAutofillDraft, 1500)
+  setTimeout(tryAutofillDraft, 3000)
+}
