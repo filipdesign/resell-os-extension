@@ -631,13 +631,20 @@ async function sendOffersToLikers() {
   }
 }
 
-// ---- AUTO-FILL FORMULARZA VINTED Z ros_draft ----
+// ---- AUTO-FILL FORMULARZA VINTED Z URL parametrow ----
 function tryAutofillDraft() {
-  const raw = localStorage.getItem('ros_draft')
-  if (!raw) return
+  const params = new URLSearchParams(location.search)
+  const title = params.get('ros_title')
+  const desc = params.get('ros_desc')
+  const price = params.get('ros_price')
+  const tags = params.get('ros_tags')
+  if (!title && !desc) return
+  const raw = JSON.stringify({ title, description: desc, price, tags })
   try {
     const draft = JSON.parse(raw)
     let filled = 0
+    // Wyczysc URL parametry zeby nie wchodzily ponownie
+    window.history.replaceState({}, '', location.pathname)
 
     // Tytul
     const titleInput = document.querySelector('input[name="title"], input[placeholder*="tytul"], input[placeholder*="Tytuł"], input[placeholder*="title"]')
