@@ -3,24 +3,62 @@
   "name": "ResellOS for Vinted",
   "version": "1.2",
   "description": "Automatyzacja sprzedaży na Vinted",
-  "permissions": ["storage", "alarms", "tabs"],
+  "permissions": [
+    "storage",
+    "alarms",
+    "tabs",
+    "scripting"
+  ],
   "host_permissions": [
     "*://*.vinted.pl/*",
     "*://*.vinted.fr/*",
     "*://*.vinted.de/*",
     "*://*.vinted.com/*",
-    "https://secondhand-manager-xax8.vercel.app/*"
+    "https://secondhand-manager-xax8.vercel.app/*",
+    "*://*.allegro.pl/*",
+    "*://*.olx.pl/*"
   ],
-  "background": {"service_worker": "src/background.js"},
-  "content_scripts": [{
-    "matches": ["*://*.vinted.pl/*","*://*.vinted.fr/*","*://*.vinted.de/*","*://*.vinted.com/*"],
-    "js": ["src/content.js"],
-    "css": ["src/content.css"],
-    "run_at": "document_idle"
-  }],
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.vinted.pl/*",
+        "*://*.vinted.fr/*",
+        "*://*.vinted.de/*",
+        "*://*.vinted.com/*"
+      ],
+      "js": [
+        "src/content.js"
+      ],
+      "css": [
+        "src/content.css"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://*.allegro.pl/*",
+        "*://*.olx.pl/*"
+      ],
+      "js": [
+        "src/content_multiplatform.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
   "action": {
     "default_popup": "popup.html",
-    "default_icon": {"16":"icons/icon16.png","48":"icons/icon48.png","128":"icons/icon128.png"}
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
   },
-  "icons": {"16":"icons/icon16.png","48":"icons/icon48.png","128":"icons/icon128.png"}
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
 }
