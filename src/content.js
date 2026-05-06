@@ -702,3 +702,29 @@ if (location.href.includes('/items/new')) {
   setTimeout(tryAutofillDraft, 1500)
   setTimeout(tryAutofillDraft, 3000)
 }
+
+
+// ---- PRICE CHECK LISTENER ----
+window.addEventListener('message', async (e) => {
+  if (e.data?.type !== 'ROS_PRICE_REQUEST') return
+  const query = e.data.query || ''
+  if (!query) { window.postMessage({ type: 'ROS_PRICE_RESULTS', items: [] }, '*'); return }
+
+  try {
+    const r = await fetch(`/api/v2/catalog/items?search_text=${encodeURIComponent(query)}&per_page=20&order=relevance`, {
+      credentials: 'include',
+      headers: { 'accept': 'application/json', 'x-csrf-token': Math.random().toString(36).slice(2) }
+    })
+    if (!r.ok) { window.postMessage({ type: 'ROS_PRICE_RESULTS', items: [] }, '*'); return }
+    const d = await r.json()
+    const items = (d.items || []).map((i) => ({
+      title: i.title || '',
+      price: parseFloat(i.price_numeric || i.total_item_price_numeric || 0),
+      url: i.url || '',
+      photo: i.photo?.url || ''
+    })).filter(i => i.price > 0)
+    window.postMessage({ type: 'ROS_PRICE_RESULTS', items }, '*')
+  } catch(e) {
+    window.postMessage({ type: 'ROS_PRICE_RESULTS', items: [] }, '*')
+  }
+})
