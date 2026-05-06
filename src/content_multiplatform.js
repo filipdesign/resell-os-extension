@@ -29,7 +29,7 @@
     const host = location.hostname
     let filled = 0
 
-    if (host.includes('allegro.pl')) {
+    if (host.includes('allegrolokalnie.pl') || host.includes('allegro.pl')) {
       // Allegro - formularz wystawiania
       const titleEl = document.querySelector(
         'input[name="title"], input[placeholder*="tytuł"], input[placeholder*="Tytuł"], input[placeholder*="nazwa"], [data-testid*="title"] input'
