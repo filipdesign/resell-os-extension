@@ -298,7 +298,7 @@ function injectItemPage() {
   wrap.style.cssText = 'display:flex;gap:8px;margin:8px 0;'
   const btn = document.createElement('button')
   btn.id = 'ros-item-btn'
-  btn.textContent = '🔄 Odśwież ogłoszenie'
+  btn.textContent = 'Odśwież ogłoszenie'
   btn.style.cssText = 'padding:10px 20px;background:#8b5cf6;color:white;border:none;border-radius:10px;cursor:pointer;font-size:14px;font-weight:700;box-shadow:0 4px 12px rgba(139,92,246,0.4);'
   btn.onclick = () => repostSingle(itemId, false)
   wrap.appendChild(btn)
@@ -306,7 +306,7 @@ function injectItemPage() {
   // Przycisk "Dodaj do ResellOS"
   const btnAdd = document.createElement('button')
   btnAdd.id = 'ros-add-btn'
-  btnAdd.textContent = '📦 Dodaj do ResellOS'
+  btnAdd.textContent = 'Dodaj do ResellOS'
   btnAdd.style.cssText = 'padding:10px 20px;background:#10b981;color:white;border:none;border-radius:10px;cursor:pointer;font-size:14px;font-weight:700;box-shadow:0 4px 12px rgba(16,185,129,0.4);'
   btnAdd.onclick = () => {
     // Zbierz dane ogloszenia z DOM
@@ -363,10 +363,10 @@ function injectWardrobePanel() {
   msg.id = 'ros-msg'
   msg.style.cssText = 'color:#9ca3af;font-size:11px;margin-bottom:8px;min-height:14px;'
   panel.appendChild(hdr); panel.appendChild(msg)
-  const b1 = mkBtn('Odswierz zaznaczone', '#8b5cf6', () => {})
+  const b1 = mkBtn('Odśwież zaznaczone', '#8b5cf6', () => {})
   const b2 = mkBtn('Zaznacz wszystkie', '#7c3aed', () => {})
-  const b3 = mkBtn('Sync statusow', '#10b981', () => {})
-  const b4 = mkBtn('Otworz ResellOS', '#374151', () => {})
+  const b3 = mkBtn('Sync statusów', '#10b981', () => {})
+  const b4 = mkBtn('Otwórz ResellOS', '#374151', () => {})
   panel.appendChild(b1); panel.appendChild(b2); panel.appendChild(b3); panel.appendChild(b4)
   document.body.appendChild(panel)
   cls.onclick = () => panel.style.display = 'none'
