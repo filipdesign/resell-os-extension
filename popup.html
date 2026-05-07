@@ -46,7 +46,7 @@ input[type=range]{flex:1;accent-color:#8b5cf6;height:4px;}
 
   <div class="section">Akcje</div>
   <button class="btn bp" id="b-repost">Odśwież zaznaczone</button>
-  <button class="btn bo" id="b-offers">Wyślij oferty do lajkujących</button>
+  <button class="btn bo" id="b-offers" disabled style="opacity:0.45;cursor:not-allowed;display:flex;justify-content:space-between;align-items:center;">Wyślij oferty do lajkujących<span style="font-size:9px;background:rgba(255,255,255,0.2);padding:2px 6px;border-radius:10px;font-weight:600;">Wkrótce</span></button>
   <button class="btn bg" id="b-sync">Sync sprzedaży</button>
   <button class="btn bd" id="b-app">Otwórz ResellOS</button>
 
@@ -75,7 +75,7 @@ input[type=range]{flex:1;accent-color:#8b5cf6;height:4px;}
     </select>
   </div>
   <div class="trow" style="opacity:0.45">
-    <span>Auto-oferty do lajkujących</span>
+    <span>Auto-oferty do lajkujących <span style="font-size:9px;background:#374151;padding:1px 5px;border-radius:8px;color:#6b7280;">Wkrótce</span></span>
     <button class="tog" id="t-offers" disabled></button>
   </div>
   <div class="trow">
